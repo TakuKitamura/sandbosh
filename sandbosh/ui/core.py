@@ -7,6 +7,19 @@ WIDTH = 1000
 HEIGHT = 600
 
 
+class ExpandoText(tk.Text):
+    def insert(self, *args, **kwargs):
+        result = tk.Text.insert(self, *args, **kwargs)
+        self.reset_height()
+        return result
+
+    def reset_height(self):
+        height = self.tk.call(
+            (self._w, "count", "-update", "-displaylines", "1.0", "end"))
+        print(height)
+        self.configure(height=height)
+
+
 class ShellUI(tk.Frame):
     def __init__(self, root=None):
         super().__init__(root)
@@ -59,37 +72,22 @@ class ShellUI(tk.Frame):
                 self.create_shell_line(i+1)
 
         def any_key_handler(event):
-            get_line = self.input_line.get(
-                '1.0', 'end -1c') + event.char
-            if event.char == '\x7f':
-                get_line = get_line[0:len(get_line)-1]
-
-            v = (self.font.measure(get_line)) / 1000
-            print(v, math.ceil(v+0.4))
-            print('height', self.input_line['height'])
-            self.input_line['height'] = math.ceil(v + 0.05)
-
             self.input_line.focus_force()
 
-        def show(event):
-            print(event)
-            # print((self.font.measure(self.input_line.get(
-            #     '1.0', 'end -1c')) + self.font.measure('$')) // WIDTH)
-            # print(event)
+        def keyRelease(event):
+            self.input_line['height'] = self.tk.call((self.input_line, "count", "-update",
+                                                      "-displaylines", "1.0", "end"))
 
         self.doller_mark = tk.Label(
             self.scrollable_frame, text="$", foreground='white', background='black', borderwidth=0, font=self.font)
         self.doller_mark.grid(row=i, column=1, sticky=tk.N)
 
-        # self.input_line = tk.Entry(
-        #     self.scrollable_frame, width=70, foreground='white', background='black',  readonlybackground='black', insertbackground='white', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=False, font=("", 30))
-
-        # print(WIDTH//self.font.measure('A'))
         self.input_line = tk.Text(
-            self.scrollable_frame, wrap=tk.WORD, height=1, width=(WIDTH//self.font.measure('A'))+1, foreground='white', background='blue',   insertbackground='white', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=False, font=self.font, padx=0, pady=0, insertwidth=0, autoseparators=0)
-        # print(font.measure('012345678901234567890123456789012345678901234567890123'))
+            self.scrollable_frame, wrap=tk.WORD, height=1, width=(WIDTH//self.font.measure('A'))+1, foreground='white', background='black',   insertbackground='white', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=False, font=self.font, padx=0, pady=0, insertwidth=0, autoseparators=0)
+
         self.input_line.bind('<Return>', enter_key_handler)
         self.input_line.bind('<KeyPress>', any_key_handler)
+        self.input_line.bind('<KeyRelease>', keyRelease)
         self.input_line.bind('')
         self.input_line.grid(row=i, column=2)
 
