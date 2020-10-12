@@ -6,20 +6,6 @@ import math
 WIDTH = 1000
 HEIGHT = 600
 
-
-class ExpandoText(tk.Text):
-    def insert(self, *args, **kwargs):
-        result = tk.Text.insert(self, *args, **kwargs)
-        self.reset_height()
-        return result
-
-    def reset_height(self):
-        height = self.tk.call(
-            (self._w, 'count', '-update', '-displaylines', '1.0', 'end'))
-        print(height)
-        self.configure(height=height)
-
-
 class ShellUI(tk.Frame):
     def __init__(self, root=None):
         super().__init__(root)
