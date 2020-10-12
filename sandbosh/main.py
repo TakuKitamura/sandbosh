@@ -3,7 +3,6 @@ from sandbosh import welcome_message
 
 
 def main():
-    welcome_message()
     ready_shell_ui()
 
 
