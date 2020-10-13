@@ -37,9 +37,16 @@ class ShellUI(tk.Frame):
                 self.canvas.yview_moveto(event.height)
                 self.canvas_height = event.height
 
+        def on_mousewheel(event):
+            # TODO: Mac以外も動作するようにする
+
+            # Mac
+            self.canvas.yview_scroll(-1*event.delta, "units")
+
         # スクロールできるフレーム
         self.scrollable_frame = tk.Frame(self.root)
         self.scrollable_frame.bind('<Configure>', canvas_configure)
+        self.canvas.bind_all("<MouseWheel>", on_mousewheel)
 
         self.canvas.create_window(
             (0, 0), window=self.scrollable_frame, anchor='nw')
@@ -56,15 +63,6 @@ class ShellUI(tk.Frame):
         # スクロールバーと, キャンバスを描写
         self.scroll_y.pack(side=tk.RIGHT, fill='y')
         self.canvas.pack(side=tk.LEFT, fill='both', expand=True)
-        self.input_line.after(100, self.welcome_message)
-
-    def welcome_message(self):
-        self.input_line.insert(
-            1.0, 'Tkinter は Python からGUIを構築・操作するための標準ライブラリ（ウィジェット・ツールキット）である。Tcl/Tk の Tk 部分を Python で利用できるようにしたもので、使い方も可能な限り Tcl/Tk にあわせられるように作られている。 これにより、スクリプト言語である Python から簡単にGUI画面をもったアプリケーションを作ることが可能になる。なお、Windows 版の Python では通常、python.exe から実行するが、この場合「コマンドプロンプト」の画面が開くことになる。 GUIアプリケーションの場合、この画面が必要なければ、代わりに pythonw.exe からスクリプトを起動させることで、「コマンドプロンプト」の画面を表示させずに実行することが可能になる[1]。 この方法はサン・マイクロシステムズから提供されている Windows 版 Java ランタイムが使っている方法[2]と同じといえる。')
-        self.input_line.configure(height=self.get_input_line_count())
-
-        self.input_line.configure(state='disabled')
-        self.create_shell_line(2)
 
     def get_input_line(self):
         return self.input_line.get('1.0', tk.END).strip()
