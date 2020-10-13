@@ -26,10 +26,16 @@ class ShellUI(tk.Frame):
         self.canvas = tk.Canvas(
             self.root, background='black', borderwidth=0, highlightthickness=0)
 
+        # キャンバスの高さ
+        self.canvas_height = 0
+
         # キャンバスが更新されるタイミング
         def canvas_configure(event):
-            self.canvas.configure(scrollregion=self.canvas.bbox('all'))
-            self.canvas.yview_moveto(self.canvas.bbox('all')[3])
+            # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合
+            if (self.canvas_height != event.height):
+                self.canvas.configure(scrollregion=self.canvas.bbox('all'))
+                self.canvas.yview_moveto(event.height)
+                self.canvas_height = event.height
 
         # スクロールできるフレーム
         self.scrollable_frame = tk.Frame(self.root)
@@ -70,14 +76,19 @@ class ShellUI(tk.Frame):
         def enter_key_handler(event):
             # 末尾の改行は除く
             line = self.get_input_line()
-            if (len(line) != 0):
-                print(line)
-                self.input_line.configure(state='disabled')
-                self.create_shell_line(i+1)
+            print("command: '{}'".format(line))
+            self.input_line.configure(state='disabled')
+            self.create_shell_line(i+1)
+
+        def input_key_press_handler(event):
+            pass
 
         def input_key_release_handler(event):
-            if event.keysym != 'Return':
-                self.input_line.configure(height=self.get_input_line_count())
+            # 文字列を折り返すときに, コマンド入力エリアを1行追加
+            self.input_line.configure(height=self.get_input_line_count())
+
+            # 画面のふちまで文字列が埋まり, 行数が増加する前のキャンバスの高さ
+            self.canvas_height = self.canvas.bbox('all')[3]
 
         self.doller_mark = tk.Label(
             self.scrollable_frame, text='$', foreground='white', background='black', borderwidth=0, font=self.font)
@@ -87,8 +98,8 @@ class ShellUI(tk.Frame):
             self.scrollable_frame, wrap=tk.CHAR, height=1, width=(WIDTH//self.font.measure('A'))+1, foreground='white', background='black', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.font, padx=0, pady=1, insertwidth=1, autoseparators=0)
 
         self.input_line.bind('<Return>', enter_key_handler)
+        self.input_line.bind('<KeyPress>', input_key_press_handler)
         self.input_line.bind('<KeyRelease>', input_key_release_handler)
-        self.input_line.bind('')
         self.input_line.grid(row=i, column=2)
 
         # カーソルを強制的に合わせる
