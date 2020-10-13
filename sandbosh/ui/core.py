@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import tkinter.font as tkfont
-import math
 
 WIDTH = 1000
 HEIGHT = 600
