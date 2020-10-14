@@ -2,28 +2,40 @@
 import tkinter as tk
 import tkinter.font as tkfont
 
-WIDTH = 1000
-HEIGHT = 600
-
 
 class ShellUI(tk.Frame):
     def __init__(self, root=None):
         super().__init__(root)
         self.root = root
+        self.window_width = 1000
+        self.window_height = 600
 
         # ウィンドータイトル
         self.root.title('SandBosh')
 
         # 初期画面の大きさ
-        self.root.geometry('{}x{}'.format(WIDTH, HEIGHT))
+        self.root.geometry('{}x{}'.format(
+            self.window_width, self.window_height))
 
-        self.root.configure(background='black')
+        self.root.configure(background='blue')
+
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+        def root_configure(event):
+            self.canvas.itemconfig(
+                self.create_scrollable_frame, width=self.root.winfo_width())
+
+        self.root.bind('<Configure>', root_configure)
 
         self.font = tk.font.Font(family='Consolas', size=30, weight='normal')
 
         # 基本的なパーツを載せるキャンバス
         self.canvas = tk.Canvas(
-            self.root, background='black', borderwidth=0, highlightthickness=0)
+            self.root, background='green', borderwidth=0, highlightthickness=0, width=self.window_width, height=self.window_height)
+
+        self.canvas.grid_rowconfigure(0, weight=1)
+        self.canvas.grid_columnconfigure(0, weight=1)
 
         # キャンバスの高さ
         self.canvas_height = 0
@@ -43,12 +55,16 @@ class ShellUI(tk.Frame):
             self.canvas.yview_scroll(-1*event.delta, "units")
 
         # スクロールできるフレーム
-        self.scrollable_frame = tk.Frame(self.root)
+        self.scrollable_frame = tk.Frame(
+            self.canvas, background='red', width=self.window_width, height=self.window_height)
+        self.scrollable_frame.grid_rowconfigure(0, weight=1)
+        self.scrollable_frame.grid_columnconfigure(2, weight=1)
+
         self.scrollable_frame.bind('<Configure>', canvas_configure)
         self.canvas.bind_all("<MouseWheel>", on_mousewheel)
 
-        self.canvas.create_window(
-            (0, 0), window=self.scrollable_frame, anchor='nw')
+        self.create_scrollable_frame = self.canvas.create_window(
+            (0, 0), window=self.scrollable_frame, anchor=tk.N+tk.W)
 
         self.scroll_y = tk.Scrollbar(
             self.root, orient='vertical', command=self.canvas.yview
@@ -60,8 +76,8 @@ class ShellUI(tk.Frame):
         self.create_shell_line()
 
         # スクロールバーと, キャンバスを描写
-        self.scroll_y.pack(side=tk.RIGHT, fill='y')
-        self.canvas.pack(side=tk.LEFT, fill='both', expand=True)
+        self.scroll_y.grid(row=0, column=1, sticky=tk.S+tk.N)
+        self.canvas.grid(row=0, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
 
     def get_input_line(self):
         return self.input_line.get('1.0', tk.END).strip()
@@ -89,16 +105,17 @@ class ShellUI(tk.Frame):
             self.canvas_height = self.canvas.bbox('all')[3]
 
         self.doller_mark = tk.Label(
-            self.scrollable_frame, text='$', foreground='white', background='black', borderwidth=0, font=self.font)
+            self.scrollable_frame, text='$', foreground='orange', background='black', borderwidth=0, font=self.font)
         self.doller_mark.grid(row=i, column=1, sticky=tk.N, padx=0)
 
         self.input_line = tk.Text(
-            self.scrollable_frame, wrap=tk.CHAR, height=1, width=(WIDTH//self.font.measure('A'))+1, foreground='white', background='black', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.font, padx=0, pady=1, insertwidth=1, autoseparators=0)
+            self.scrollable_frame, wrap=tk.CHAR, height=1, foreground='white', background='purple', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.font, padx=0, pady=1, insertwidth=1, autoseparators=0)
 
         self.input_line.bind('<Return>', enter_key_handler)
         self.input_line.bind('<KeyPress>', input_key_press_handler)
         self.input_line.bind('<KeyRelease>', input_key_release_handler)
-        self.input_line.grid(row=i, column=2)
+
+        self.input_line.grid(row=i, column=2, sticky=tk.E+tk.W)
 
         # カーソルを強制的に合わせる
         self.input_line.focus_force()
