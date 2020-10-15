@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import tkinter.font as tkfont
+import threading
 
 
 class ShellUI(tk.Frame):
@@ -29,7 +30,7 @@ class ShellUI(tk.Frame):
 
         self.root.bind('<Configure>', root_configure)
 
-        self.font = tk.font.Font(family='Consolas', size=30, weight='normal')
+        self.font = tk.font.Font(family='Monaco', size=35, weight='normal')
 
         # 基本的なパーツを載せるキャンバス
         self.canvas = tk.Canvas(
@@ -50,14 +51,14 @@ class ShellUI(tk.Frame):
                 self.canvas_height = event.height
 
         def on_mousewheel(event):
-            # 現在のスクロールバーの位置
+            # 現在のスクロールバーの位置を更新
             scrollbar_pos = self.scrollbar_y.get()
             self.scrollbar_y.set(scrollbar_pos[0], scrollbar_pos[1])
 
             # スクロールが必要になるまでスクロールさせないための条件
             if (scrollbar_pos[0] != 0.0 or scrollbar_pos[1] != 1.0):
                 # TODO: Mac以外も動作するようにする
-                self.canvas.yview_scroll(-1*event.delta, "units")
+                self.canvas.yview_scroll(-1*event.delta, tk.UNITS)
 
         # スクロールできるフレーム
         self.scrollable_frame = tk.Frame(
@@ -98,11 +99,12 @@ class ShellUI(tk.Frame):
             print("command: '{}'".format(line))
             self.input_line.configure(state=tk.DISABLED)
             self.create_shell_line(i+1)
+
+        def key_handler(event):
             self.canvas.yview_moveto(self.canvas.winfo_height())
 
         def input_key_press_handler(event):
-            # pass
-            self.canvas.yview_moveto(self.canvas.winfo_height())
+            pass
 
         def input_key_release_handler(event):
             # 文字列を折り返すときに, コマンド入力エリアを1行追加
@@ -113,13 +115,14 @@ class ShellUI(tk.Frame):
 
         self.doller_mark = tk.Label(
             self.scrollable_frame, text='$', foreground='orange', background='black', borderwidth=0, font=self.font)
-        self.doller_mark.grid(row=i, column=1, sticky=tk.N, padx=0)
+        self.doller_mark.grid(row=i, column=1, padx=0, sticky=tk.N)
 
         self.input_line = tk.Text(
-            self.scrollable_frame, wrap=tk.CHAR, height=1, foreground='white', background='purple', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.font, padx=0, pady=1, insertwidth=1, autoseparators=0)
+            self.scrollable_frame, wrap=tk.CHAR, height=1, foreground='white', background='purple', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.font, pady=1, insertwidth=1, autoseparators=0, padx=10)
 
         self.input_line.bind('<Return>', enter_key_handler)
         self.input_line.bind('<KeyPress>', input_key_press_handler)
+        self.input_line.bind('<Key>', key_handler)
         self.input_line.bind('<KeyRelease>', input_key_release_handler)
 
         self.input_line.grid(row=i, column=2, sticky=tk.E+tk.W)
