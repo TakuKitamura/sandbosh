@@ -50,10 +50,14 @@ class ShellUI(tk.Frame):
                 self.canvas_height = event.height
 
         def on_mousewheel(event):
-            # TODO: Mac以外も動作するようにする
+            # 現在のスクロールバーの位置
+            scrollbar_pos = self.scrollbar_y.get()
+            self.scrollbar_y.set(scrollbar_pos[0], scrollbar_pos[1])
 
-            # Mac
-            self.canvas.yview_scroll(-1*event.delta, "units")
+            # スクロールが必要になるまでスクロールさせないための条件
+            if (scrollbar_pos[0] != 0.0 or scrollbar_pos[1] != 1.0):
+                # TODO: Mac以外も動作するようにする
+                self.canvas.yview_scroll(-1*event.delta, "units")
 
         # スクロールできるフレーム
         self.scrollable_frame = tk.Frame(
@@ -67,17 +71,17 @@ class ShellUI(tk.Frame):
         self.create_scrollable_frame = self.canvas.create_window(
             (0, 0), window=self.scrollable_frame, anchor=tk.N+tk.W)
 
-        self.scroll_y = tk.Scrollbar(
+        self.scrollbar_y = tk.Scrollbar(
             self.root, orient=tk.VERTICAL, command=self.canvas.yview
         )
 
-        self.canvas.configure(yscrollcommand=self.scroll_y.set)
+        self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
 
         # コマンド入力用のラインを1行作成
         self.create_shell_line()
 
         # スクロールバーと, キャンバスを描写
-        self.scroll_y.grid(row=0, column=1, sticky=tk.S+tk.N)
+        self.scrollbar_y.grid(row=0, column=1, sticky=tk.S+tk.N)
         self.canvas.grid(row=0, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
 
     def get_input_line(self):
@@ -94,17 +98,18 @@ class ShellUI(tk.Frame):
             print("command: '{}'".format(line))
             self.input_line.configure(state=tk.DISABLED)
             self.create_shell_line(i+1)
+            self.canvas.yview_moveto(self.canvas.winfo_height())
 
         def input_key_press_handler(event):
-            pass
+            # pass
+            self.canvas.yview_moveto(self.canvas.winfo_height())
 
         def input_key_release_handler(event):
             # 文字列を折り返すときに, コマンド入力エリアを1行追加
             self.input_line.configure(height=self.get_input_line_count())
-            pass
 
             # 画面のふちまで文字列が埋まり, 行数が増加する前のキャンバスの高さ
-            self.canvas_height = self.canvas.bbox('all')[3]
+            self.canvas_height = self.canvas.winfo_height()
 
         self.doller_mark = tk.Label(
             self.scrollable_frame, text='$', foreground='orange', background='black', borderwidth=0, font=self.font)
