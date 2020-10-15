@@ -24,7 +24,14 @@ class ShellUI(tk.Frame):
         self.root.grid_columnconfigure(0, weight=1)
 
         def root_configure(event):
-            pass
+            # キャンバスの子要素を取得
+            children = self.scrollable_frame.winfo_children()
+            for (i, child) in enumerate(children):
+
+                # 奇数番目がText
+                if i % 2 == 1:
+                    child['height'] = child.count(
+                        '1.0', tk.END, 'update', 'displaylines')
 
         self.root.bind('<Configure>', root_configure)
 
@@ -44,15 +51,6 @@ class ShellUI(tk.Frame):
         def canvas_configure(event):
             self.canvas.itemconfig(
                 self.create_scrollable_frame, width=self.root.winfo_width())
-
-            # キャンバスの子要素を取得
-            children = self.scrollable_frame.winfo_children()
-            for (i, child) in enumerate(children):
-
-                # 奇数番目がText
-                if i % 2 == 1:
-                    child['height'] = child.count(
-                        '1.0', tk.END, 'update', 'displaylines')
 
             # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合
             if (self.canvas_height != event.height):
