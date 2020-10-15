@@ -23,6 +23,7 @@ class ShellUI(tk.Frame):
         self.root.grid_columnconfigure(0, weight=1)
 
         def root_configure(event):
+            self.input_line.configure(height=self.get_input_line_count())
             self.canvas.itemconfig(
                 self.create_scrollable_frame, width=self.root.winfo_width())
 
@@ -67,7 +68,7 @@ class ShellUI(tk.Frame):
             (0, 0), window=self.scrollable_frame, anchor=tk.N+tk.W)
 
         self.scroll_y = tk.Scrollbar(
-            self.root, orient='vertical', command=self.canvas.yview
+            self.root, orient=tk.VERTICAL, command=self.canvas.yview
         )
 
         self.canvas.configure(yscrollcommand=self.scroll_y.set)
@@ -91,7 +92,7 @@ class ShellUI(tk.Frame):
             # 末尾の改行は除く
             line = self.get_input_line()
             print("command: '{}'".format(line))
-            self.input_line.configure(state='disabled')
+            self.input_line.configure(state=tk.DISABLED)
             self.create_shell_line(i+1)
 
         def input_key_press_handler(event):
@@ -100,6 +101,7 @@ class ShellUI(tk.Frame):
         def input_key_release_handler(event):
             # 文字列を折り返すときに, コマンド入力エリアを1行追加
             self.input_line.configure(height=self.get_input_line_count())
+            pass
 
             # 画面のふちまで文字列が埋まり, 行数が増加する前のキャンバスの高さ
             self.canvas_height = self.canvas.bbox('all')[3]
