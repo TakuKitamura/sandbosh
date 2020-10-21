@@ -24,14 +24,7 @@ class ShellUI(tk.Frame):
         self.root.grid_columnconfigure(0, weight=1)
 
         def root_configure(event):
-            # キャンバスの子要素を取得
-            children = self.scrollable_frame.winfo_children()
-            for (i, child) in enumerate(children):
-
-                # 奇数番目がText
-                if i % 2 == 1:
-                    child['height'] = child.count(
-                        '1.0', tk.END, 'update', 'displaylines')
+            pass
 
         self.root.bind('<Configure>', root_configure)
 
@@ -49,6 +42,16 @@ class ShellUI(tk.Frame):
 
         # キャンバスが更新されるタイミング
         def canvas_configure(event):
+            print(event)
+            # キャンバスの子要素を取得
+            children = self.scrollable_frame.winfo_children()
+            for (i, child) in enumerate(children):
+
+                # 奇数番目がText
+                if i % 2 == 1:
+                    child['height'] = child.count(
+                        '1.0', tk.END, 'update', 'displaylines')
+
             self.canvas.itemconfig(
                 self.create_scrollable_frame, width=self.root.winfo_width())
 
@@ -90,7 +93,7 @@ class ShellUI(tk.Frame):
         self.create_shell_line()
 
         # スクロールバーと, キャンバスを描写
-        self.scrollbar_y.grid(row=0, column=1, sticky=tk.S+tk.N)
+        # self.scrollbar_y.grid(row=0, column=1, sticky=tk.S+tk.N)
         self.canvas.grid(row=0, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
 
     def get_input_line(self):
