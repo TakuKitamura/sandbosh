@@ -39,6 +39,10 @@ class ShellUI(tk.Frame):
         # rootの上にのる画面
         self.canvas: tk.Canvas = self.setup_canvas(self.root)
 
+        # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合を検知するために利用
+        # キャンバスの高さ
+        self.canvas_height = self.canvas.winfo_height()
+
         # canvasの上にのるスクロールバー
         self.scrollbar: tk.Scrollbar = self.setup_scrollbar(self.canvas)
 
@@ -160,8 +164,12 @@ class ShellUI(tk.Frame):
             canvas_pos: Tuple[int, int, int, int] = canvas.bbox('all')
             canvas.configure(scrollregion=canvas_pos)
 
-            # Enter Keyの入力時に画面を最下部にスクロール
-            canvas.yview_moveto(event.height)
+            # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合に画面下部にスクロール
+            if (self.canvas_height != event.height):
+                # キャンバス最下部にスクロール
+                canvas.yview_moveto(event.height)
+                # キャンバスの高さを更新
+                self.canvas_height = event.height
         scrollable_frame.bind('<Configure>', canvas_configure_callback)
         return scrollable_frame_window
 
@@ -207,10 +215,14 @@ class ShellUI(tk.Frame):
             self.setup_doller_mark(scrollable_frame, next_index)
             self.setup_input_line(canvas, scrollable_frame, next_index)
 
+            # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合を検知するために利用
+            self.canvas_height = canvas.winfo_height()
+
         def key_callback(event: tk.Event):
             """
             keyが押された際に呼び出される関数
             """
+            # 画面外に入力欄がある場合に, 最下部にスクロール
             canvas_height: int = canvas.winfo_height()
             canvas.yview_moveto(canvas_height)
 
@@ -235,4 +247,6 @@ def ready_shell_ui() -> None:
     """
     root: tk.Tk = tk.Tk()
     app: ShellUI = ShellUI(root)
+
+    # 画面を表示させたまま無限ループ
     app.mainloop()
