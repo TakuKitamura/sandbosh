@@ -1,148 +1,238 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import tkinter.font as tkfont
-import threading
+from typing import NewType, Tuple, List
+
+# """
+# pylanceの設定
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownArgumentType=false
+# """
+
+
+# CreateWindow関数の返り値用の型
+CreateWindowID = NewType('CreateWindowID', int)
 
 
 class ShellUI(tk.Frame):
-    def __init__(self, root=None):
+    """
+        ShellのUI用のクラス
+    """
+
+    def __init__(self, root: tk.Tk):
+        """
+         クラスの初期化関数
+        """
+
         super().__init__(root)
-        self.root = root
-        self.window_width = 1000
-        self.window_height = 600
+        self.window_width: int = 1000
+        self.window_height: int = 600
+
+        self.doller_mark_font: tkfont.Font = tkfont.Font(
+            family='Monaco', size=35, weight='normal')
+        self.input_line_font: tkfont.Font = tkfont.Font(
+            family='Monaco', size=35, weight='normal')
+
+        # 一番後ろ側の画面
+        self.root: tk.Tk = self.setup_root(root)
+
+        # rootの上にのる画面
+        self.canvas: tk.Canvas = self.setup_canvas(self.root)
+
+        # canvasの上にのるスクロールバー
+        self.scrollbar: tk.Scrollbar = self.setup_scrollbar(self.canvas)
+
+        # canvasの上にのるスクロール可能な画面
+        self.scrollable_frame: tk.Frame = self.setup_scrollable_frame(
+            self.canvas)
+
+        self.scrollable_frame_window: CreateWindowID = self.setup_scrollable_frame_window(
+            self.canvas, self.scrollable_frame)
+
+        # コマンド入力用のラインを1行作成
+        self.doller_mark: tk.Label = self.setup_doller_mark(
+            self.scrollable_frame)
+        self.input_line: tk.Text = self.setup_input_line(
+            self.canvas, self.scrollable_frame)
+
+    def setup_root(self, root: tk.Tk) -> tk.Tk:
+        """
+        基礎画面のためのセットアップ関数
+        """
 
         # ウィンドータイトル
-        self.root.title('SandBosh')
+        root.title('SandBosh')
 
         # 初期画面の大きさ
-        self.root.geometry('{}x{}'.format(
+        root.geometry('{}x{}'.format(
             self.window_width, self.window_height))
 
-        self.root.configure(background='blue')
+        root.configure(background='blue')
 
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
+        # 画面サイズの変更に合わせて拡張させる
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=1)
+        return root
 
-        def root_configure(event):
-            pass
-
-        self.root.bind('<Configure>', root_configure)
-
-        self.font = tk.font.Font(family='Monaco', size=35, weight='normal')
-
+    def setup_canvas(self, root: tk.Tk) -> tk.Canvas:
+        """
+        キャンバスのためのセットアップ関数
+        """
         # 基本的なパーツを載せるキャンバス
-        self.canvas = tk.Canvas(
-            self.root, background='green', borderwidth=0, highlightthickness=0, width=self.window_width, height=self.window_height)
+        canvas: tk.Canvas = tk.Canvas(
+            root, background='green', borderwidth=0, highlightthickness=0, width=self.window_width, height=self.window_height)
 
-        self.canvas.grid_rowconfigure(0, weight=1)
-        self.canvas.grid_columnconfigure(0, weight=1)
+        # 画面サイズの変更に合わせて拡張させ, 配置
+        canvas.grid_rowconfigure(0, weight=1)
+        canvas.grid_columnconfigure(0, weight=1)
+        canvas.grid(row=0, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
 
-        # キャンバスの高さ
-        self.canvas_height = 0
+        return canvas
 
-        # キャンバスが更新されるタイミング
-        def canvas_configure(event):
-            print(event)
-            # キャンバスの子要素を取得
-            children = self.scrollable_frame.winfo_children()
-            for (i, child) in enumerate(children):
+    def setup_scrollbar(self, canvas: tk.Canvas) -> tk.Scrollbar:
+        """
+        スクロールバーのためのセットアップ関数
+        """
 
-                # 奇数番目がText
-                if i % 2 == 1:
-                    child['height'] = child.count(
-                        '1.0', tk.END, 'update', 'displaylines')
+        scrollbar: tk.Scrollbar = tk.Scrollbar(
+            canvas, orient=tk.VERTICAL, command=canvas.yview
+        )
 
-            self.canvas.itemconfig(
-                self.create_scrollable_frame, width=self.root.winfo_width())
+        def on_mousewheel_callback(event: tk.Event):
+            """
+            マウスホイールで入力されたときに呼び出される関数
+            """
 
-            # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合
-            if (self.canvas_height != event.height):
-                self.canvas.configure(scrollregion=self.canvas.bbox('all'))
-                self.canvas.yview_moveto(event.height)
-                self.canvas_height = event.height
-
-        def on_mousewheel(event):
             # 現在のスクロールバーの位置を更新
-            scrollbar_pos = self.scrollbar_y.get()
-            self.scrollbar_y.set(scrollbar_pos[0], scrollbar_pos[1])
+            scrollbar_pos: Tuple[float, float] = scrollbar.get()
+            scrollbar.set(scrollbar_pos[0], scrollbar_pos[1])
 
             # スクロールが必要になるまでスクロールさせないための条件
             if (scrollbar_pos[0] != 0.0 or scrollbar_pos[1] != 1.0):
                 # TODO: Mac以外も動作するようにする
-                self.canvas.yview_scroll(-1*event.delta, tk.UNITS)
+                canvas.yview_scroll(-1*event.delta, tk.UNITS)
+        canvas.bind_all("<MouseWheel>", on_mousewheel_callback)
 
-        # スクロールできるフレーム
-        self.scrollable_frame = tk.Frame(
-            self.canvas, background='red', width=self.window_width, height=self.window_height)
-        self.scrollable_frame.grid_rowconfigure(0, weight=1)
-        self.scrollable_frame.grid_columnconfigure(2, weight=1)
+        # スクロールバーとキャンバスを連携
+        canvas.configure(yscrollcommand=scrollbar.set)
+        return scrollbar
 
-        self.scrollable_frame.bind('<Configure>', canvas_configure)
-        self.canvas.bind_all("<MouseWheel>", on_mousewheel)
+    def setup_scrollable_frame(self, canvas: tk.Canvas) -> tk.Frame:
+        """
+        スクロールできるフレームのためのセットアップ関数
+        """
+        scrollable_frame: tk.Frame = tk.Frame(
+            canvas, background='red', width=self.window_width, height=self.window_height)
 
-        self.create_scrollable_frame = self.canvas.create_window(
-            (0, 0), window=self.scrollable_frame, anchor=tk.N+tk.W)
+        # 画面サイズの変更に合わせて拡張させ, 配置
+        scrollable_frame.grid_rowconfigure(0, weight=1)
+        scrollable_frame.grid_columnconfigure(2, weight=1)
+        return scrollable_frame
 
-        self.scrollbar_y = tk.Scrollbar(
-            self.root, orient=tk.VERTICAL, command=self.canvas.yview
-        )
+    def setup_scrollable_frame_window(self, canvas: tk.Canvas, scrollable_frame: tk.Frame) -> CreateWindowID:
+        """
+        スクロールできるフレーム画面のためのセットアップ関数
+        """
 
-        self.canvas.configure(yscrollcommand=self.scrollbar_y.set)
+        scrollable_frame_window: CreateWindowID = canvas.create_window(
+            (0, 0), window=scrollable_frame, anchor=tk.N+tk.W)
 
-        # コマンド入力用のラインを1行作成
-        self.create_shell_line()
+        def canvas_configure_callback(event: tk.Event):
+            """
+            キャンバスが更新されるタイミングで呼び出される関数
+            """
+            # キャンバスの子要素を取得し, 画面サイズに合わせて文字列を折り返す
+            # 奇数番目がText要素, 偶数番目がLabel要素
+            # [1::2] 奇数番目のみ取得
+            text_children: List[tk.Text] = scrollable_frame.winfo_children()[
+                1::2]
+            for text_child in text_children:
+                # 文字列を折り返す
+                line_count: int = text_child.count(
+                    '1.0', tk.END, 'update', 'displaylines')
+                text_child.configure(height=line_count)
 
-        # スクロールバーと, キャンバスを描写
-        # self.scrollbar_y.grid(row=0, column=1, sticky=tk.S+tk.N)
-        self.canvas.grid(row=0, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
+            # キャンバスに要素を配置する
+            canvas.itemconfig(
+                scrollable_frame_window, width=canvas.winfo_width())
 
-    def get_input_line(self):
-        return self.input_line.get('1.0', tk.END).strip()
+            # スクロール範囲を更新
+            canvas_pos: Tuple[int, int, int, int] = canvas.bbox('all')
+            canvas.configure(scrollregion=canvas_pos)
 
-    def get_input_line_count(self):
-        return self.input_line.count('1.0', tk.END, 'update', 'displaylines')
+            # Enter Keyの入力時に画面を最下部にスクロール
+            canvas.yview_moveto(event.height)
+        scrollable_frame.bind('<Configure>', canvas_configure_callback)
+        return scrollable_frame_window
 
-    # コマンド入力用のラインを1行作成する関数
-    def create_shell_line(self, i=1, noWidget=False):
-        def enter_key_handler(event):
-            # 末尾の改行は除く
-            line = self.get_input_line()
-            print("command: '{}'".format(line))
-            self.input_line.configure(state=tk.DISABLED)
-            self.create_shell_line(i+1)
+    def setup_doller_mark(self, scrollable_frame: tk.Frame, i: int = 1) -> tk.Label:
+        """
+        コマンド入力のためのテキストエリアの一番左にあるドルマークのセットアップ関数
+        """
+        doller_mark: tk.Label = tk.Label(
+            scrollable_frame, text='$', foreground='orange', background='black', borderwidth=0, font=self.doller_mark_font)
 
-        def key_handler(event):
-            self.canvas.yview_moveto(self.canvas.winfo_height())
+        # 画面サイズの変更に合わせて拡張させ, 配置
+        doller_mark.grid(row=i, column=1, padx=0, sticky=tk.N)
+        return doller_mark
 
-        def input_key_press_handler(event):
-            pass
+    def setup_input_line(self, canvas: tk.Canvas, scrollable_frame: tk.Frame, i: int = 1) -> tk.Text:
+        """
+        コマンド入力のためのテキストエリアのセットアップ関数
+        """
+        input_line: tk.Text = tk.Text(
+            scrollable_frame, wrap=tk.CHAR, height=1, foreground='white', background='purple', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.input_line_font, pady=1, insertwidth=1, padx=10)
 
-        def input_key_release_handler(event):
-            # 文字列を折り返すときに, コマンド入力エリアを1行追加
-            self.input_line.configure(height=self.get_input_line_count())
-
-            # 画面のふちまで文字列が埋まり, 行数が増加する前のキャンバスの高さ
-            self.canvas_height = self.canvas.winfo_height()
-
-        self.doller_mark = tk.Label(
-            self.scrollable_frame, text='$', foreground='orange', background='black', borderwidth=0, font=self.font)
-        self.doller_mark.grid(row=i, column=1, padx=0, sticky=tk.N)
-
-        self.input_line = tk.Text(
-            self.scrollable_frame, wrap=tk.CHAR, height=1, foreground='white', background='purple', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.font, pady=1, insertwidth=1, autoseparators=0, padx=10)
-
-        self.input_line.bind('<Return>', enter_key_handler)
-        self.input_line.bind('<KeyPress>', input_key_press_handler)
-        self.input_line.bind('<Key>', key_handler)
-        self.input_line.bind('<KeyRelease>', input_key_release_handler)
-
-        self.input_line.grid(row=i, column=2, sticky=tk.E+tk.W)
+        # 画面サイズの変更に合わせて拡張させ, 配置
+        input_line.grid(row=i, column=2, sticky=tk.E+tk.W)
 
         # カーソルを強制的に合わせる
-        self.input_line.focus_force()
+        input_line.focus_force()
+
+        def enter_key_callback(event: tk.Event):
+            """
+            Enter keyが押された際に呼び出される関数
+            """
+            # 末尾の改行は除く
+            line: str = input_line.get('1.0', tk.END).strip()
+
+            # コマンドの入力内容を標準出力
+            print("command: '{}'".format(line))
+
+            # 既に入力済みのテキストエリアを編集不可に変更
+            input_line.configure(state=tk.DISABLED)
+            next_index: int = i+1
+
+            # 次のコマンド入力ラインを表示
+            self.setup_doller_mark(scrollable_frame, next_index)
+            self.setup_input_line(canvas, scrollable_frame, next_index)
+
+        def key_callback(event: tk.Event):
+            """
+            keyが押された際に呼び出される関数
+            """
+            canvas_height: int = canvas.winfo_height()
+            canvas.yview_moveto(canvas_height)
+
+        def input_key_release_callback(event: tk.Event):
+            """
+            keyを離した際に呼び出される関数
+            """
+            # 文字列を折り返すときに, コマンド入力エリアを1行追加
+            line_count: int = input_line.count(
+                '1.0', tk.END, 'update', 'displaylines')
+            input_line.configure(height=line_count)
+
+        input_line.bind('<Return>', enter_key_callback)
+        input_line.bind('<Key>', key_callback)
+        input_line.bind('<KeyRelease>', input_key_release_callback)
+        return input_line
 
 
-def ready_shell_ui():
-    root = tk.Tk()
-    app = ShellUI(root=root)
+def ready_shell_ui() -> None:
+    """
+    UIを呼び出す関数
+    """
+    root: tk.Tk = tk.Tk()
+    app: ShellUI = ShellUI(root)
     app.mainloop()
