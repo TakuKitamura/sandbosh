@@ -3,12 +3,9 @@ import tkinter as tk
 import tkinter.font as tkfont
 from typing import NewType, Tuple, List
 
-# """
 # pylanceの設定
 # pyright: reportUnknownMemberType=false
 # pyright: reportUnknownArgumentType=false
-# """
-
 
 # CreateWindow関数の返り値用の型
 CreateWindowID = NewType('CreateWindowID', int)
