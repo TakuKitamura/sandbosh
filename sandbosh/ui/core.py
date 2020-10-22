@@ -30,6 +30,8 @@ class ShellUI(tk.Frame):
         self.input_line_font: tkfont.Font = tkfont.Font(
             family='Monaco', size=35, weight='normal')
 
+        self.comman_list: List[str] = []
+
         # 一番後ろ側の画面
         self.root: tk.Tk = self.setup_root(root)
 
@@ -203,6 +205,9 @@ class ShellUI(tk.Frame):
 
             # コマンドの入力内容を標準出力
             print("command: '{}'".format(line))
+
+            if len(line) > 0:
+                self.comman_list.append(line)
 
             # 既に入力済みのテキストエリアを編集不可に変更
             input_line.configure(state=tk.DISABLED)
