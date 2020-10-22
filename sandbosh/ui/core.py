@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import tkinter.font as tkfont
-from typing import NewType, Tuple, List
+from typing import Any, NewType, Tuple, List
 
 # pylanceの設定
 # pyright: reportUnknownMemberType=false
@@ -28,6 +28,8 @@ class ShellUI(tk.Frame):
         self.doller_mark_font: tkfont.Font = tkfont.Font(
             family='Monaco', size=35, weight='normal')
         self.input_line_font: tkfont.Font = tkfont.Font(
+            family='Monaco', size=35, weight='normal')
+        self.std_font: tkfont.Font = tkfont.Font(
             family='Monaco', size=35, weight='normal')
 
         self.comman_list: List[str] = []
@@ -57,6 +59,8 @@ class ShellUI(tk.Frame):
             self.scrollable_frame)
         self.input_line: tk.Text = self.setup_input_line(
             self.canvas, self.scrollable_frame)
+
+        self.std: tk.Text = self.setup_std(self.scrollable_frame)
 
     def setup_root(self, root: tk.Tk) -> tk.Tk:
         """
@@ -147,15 +151,32 @@ class ShellUI(tk.Frame):
             # キャンバスの子要素を取得し, 画面サイズに合わせて文字列を折り返す
             # 奇数番目がText要素, 偶数番目がLabel要素
             # [1::2] 奇数番目のみ取得
-            text_children: List[tk.Text] = scrollable_frame.winfo_children()[
-                1::2]
-            for text_child in text_children:
-                # 文字列を折り返す
-                line_count: int = text_child.count(
-                    '1.0', tk.END, 'update', 'displaylines')
-                text_child.configure(height=line_count)
+            # text_children: List[tk.Text] = scrollable_frame.winfo_children()[
+            #     1::2]
+            # for text_child in text_children:
+            #     # 文字列を折り返す
+            #     line_count: int = text_child.count(
+            #         '1.0', tk.END, 'update', 'displaylines')
+            #     text_child.configure(height=line_count)
+            wigetd_children: List[Any] = scrollable_frame.winfo_children()
+            i = 0
+            for v in wigetd_children:
+                if (v.winfo_class() == 'Text'):
+                    text_child: tk.Text = v
 
-            # キャンバスに要素を配置する
+                    line_count: int = text_child.count(
+                        '1.0', tk.END, 'update', 'displaylines')
+                    text_child.configure(height=line_count)
+
+                    if (i % 2 == 0):  # command
+                        pass
+                        # print('commmand', text_child.get('1.0', 'end-1c'))
+                    else:  # std
+                        pass
+                        # print('std', text_child.get('1.0', 'end-1c'))
+                        # print(line_count)
+                    i += 1
+                # print(dict(v))
             canvas.itemconfig(
                 scrollable_frame_window, width=canvas.winfo_width())
 
@@ -169,6 +190,7 @@ class ShellUI(tk.Frame):
                 canvas.yview_moveto(event.height)
                 # キャンバスの高さを更新
                 self.canvas_height = event.height
+
         scrollable_frame.bind('<Configure>', canvas_configure_callback)
         return scrollable_frame_window
 
@@ -193,6 +215,7 @@ class ShellUI(tk.Frame):
         # 画面サイズの変更に合わせて拡張させ, 配置
         input_line.grid(row=i, column=2, sticky=tk.E+tk.W)
 
+        # print('input', input_line.winfo_name())
         # カーソルを強制的に合わせる
         input_line.focus_force()
 
@@ -206,19 +229,32 @@ class ShellUI(tk.Frame):
             # コマンドの入力内容を標準出力
             print("command: '{}'".format(line))
 
+            # print('std', xxx.winfo_name())
+
             if len(line) > 0:
                 self.comman_list.append(line)
 
             # 既に入力済みのテキストエリアを編集不可に変更
             input_line.configure(state=tk.DISABLED)
-            next_index: int = i+1
+            # next_index: int = i+2
+
+            self.std = self.setup_std(scrollable_frame, i+1)
+
+            # TODO: ここでForkする
+            self.std.insert('1.0', input())
 
             # 次のコマンド入力ラインを表示
-            self.setup_doller_mark(scrollable_frame, next_index)
-            self.setup_input_line(canvas, scrollable_frame, next_index)
+            self.setup_doller_mark(scrollable_frame, i+2)
+            self.setup_input_line(canvas, scrollable_frame, i+2)
 
             # キャンバスがEnterもしくは, 文字列の折り返しによりcanvasの行数が増えた場合を検知するために利用
             self.canvas_height = canvas.winfo_height()
+
+            # line_count: int = self.std.count(
+            #     '1.0', tk.END, 'update', 'displaylines')
+            # print(line_count)
+
+            # self.std.configure(height=line_count)
 
         def key_callback(event: tk.Event):
             """
@@ -241,6 +277,27 @@ class ShellUI(tk.Frame):
         input_line.bind('<Key>', key_callback)
         input_line.bind('<KeyRelease>', input_key_release_callback)
         return input_line
+
+    def setup_std(self, scrollable_frame: tk.Frame, i: int = 1) -> tk.Text:
+        std: tk.Text = tk.Text(
+            scrollable_frame, wrap=tk.CHAR, height=1, foreground='white', background='gray', borderwidth=0, highlightthickness=0, selectbackground='skyblue', selectforeground='black', takefocus=True, font=self.std_font, pady=1, insertwidth=1, padx=10)
+
+        # 初期化時は表示しない
+        if i != 1:
+            # 画面サイズの変更に合わせて拡張させ, 配置
+            std.grid(row=i, column=2, sticky=tk.E+tk.W)
+
+        def std_configure_callback(event: tk.Event):
+            """
+            stdのエリアが更新されたときに呼び出される関数
+            """
+            # insertに合わせて行数を更新
+            line_count: int = std.count(
+                '1.0', tk.END, 'update', 'displaylines')
+            std.configure(height=line_count)
+        std.bind('<Configure>', std_configure_callback)
+
+        return std
 
 
 def ready_shell_ui() -> None:
