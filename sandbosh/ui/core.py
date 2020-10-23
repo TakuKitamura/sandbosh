@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
+from multiprocessing.connection import Connection
 import tkinter as tk
 import tkinter.font as tkfont
+import os
+from multiprocessing import Process, Pipe, get_context
+import threading
 from typing import Any, NewType, Tuple, List
+import time
+import subprocess
 
 # pylanceの設定
 # pyright: reportUnknownMemberType=false
@@ -9,6 +15,45 @@ from typing import Any, NewType, Tuple, List
 
 # CreateWindow関数の返り値用の型
 CreateWindowID = NewType('CreateWindowID', int)
+
+
+def command(parent_conn: Connection, child_conn: Connection):
+    print('parent process:', os.getppid())
+    print('process id:', os.getpid())
+
+    # while True:
+    #     instance: Any = parent_conn.recv()
+
+    #     if instance:
+    received = parent_conn.recv()
+    # print("子:受信:{}".format())
+    child_conn.send(subprocess.run(
+        received.split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode("utf8"))
+    exit(0)
+
+    # else:
+    #     # time.sleep(5)
+    #     # child_conn.send('@@@')
+    #     exit(0)
+    #     # return
+
+
+def fork_thread(line: str, std: tk.Text):
+
+    # parent_conn はメッセージの受信専用、child_conn はメッセージの送信専用
+    parent_conn, child_conn = Pipe(duplex=False)
+    child: Process = Process(target=command, args=(parent_conn, child_conn))
+    child_conn.send(line)
+    # child_conn.send(None)
+
+    child.start()
+    child.join()
+    std.insert('1.0', parent_conn.recv().strip())
+    line_count: int = std.count(
+        '1.0', tk.END, 'update', 'displaylines')
+    std.configure(height=line_count)
+
+    print('exit', child.exitcode)
 
 
 class ShellUI(tk.Frame):
@@ -219,8 +264,10 @@ class ShellUI(tk.Frame):
 
             self.std = self.setup_std(scrollable_frame, i+1)
 
-            # TODO: ここでたぶんForkする
-            self.std.insert('1.0', input())
+            process_thread = threading.Thread(
+                target=fork_thread, args=(line, self.std))
+            process_thread.start()
+            # process_thread.join()
 
             # 次のコマンド入力ラインを表示
             self.setup_doller_mark(scrollable_frame, i+2)
